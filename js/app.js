@@ -27,6 +27,9 @@ const CATEGORIES = {
     "Selim ev aidat",
     "Kredi ödemesi",
     "Kooperatif ödemesi",
+    "Tuba Rüzgar spor",
+    "Rüzgar özel ders",
+    "Selim spor",
     "Diğer",
   ],
 };

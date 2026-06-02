@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>Panelim</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <!-- Giriş ekranı (sadece bulut modunda) -->
+  <div id="auth-screen" class="auth-screen hidden">
+    <div class="auth-card">
+      <h1>Panelim</h1>
+      <p class="muted">Verilerinize her cihazdan erişmek için giriş yapın.</p>
+      <input id="auth-email" type="email" placeholder="E-posta" autocomplete="email" />
+      <input id="auth-pass" type="password" placeholder="Parola" autocomplete="current-password" />
+      <div class="auth-error" id="auth-error"></div>
+      <button id="auth-signin" class="btn btn-primary">Giriş Yap</button>
+      <button id="auth-signup" class="btn btn-ghost">Yeni Hesap Oluştur</button>
+    </div>
+  </div>
+
+  <!-- Uygulama -->
+  <div id="app" class="app hidden">
+    <header class="topbar">
+      <div class="brand">Panelim</div>
+      <div class="balance-pill" id="balance-pill">₺0,00</div>
+      <div class="topbar-actions">
+        <button id="theme-toggle" class="icon-btn" title="Tema">🌙</button>
+      </div>
+    </header>
+
+    <main class="content">
+      <!-- ÖZET -->
+      <section data-view="ozet" class="view">
+        <div class="cards">
+          <div class="stat-card income"><span class="stat-label">Bu Ay Gelir</span><span class="stat-value" id="sum-income">₺0</span></div>
+          <div class="stat-card expense"><span class="stat-label">Bu Ay Gider</span><span class="stat-value" id="sum-expense">₺0</span></div>
+          <div class="stat-card net"><span class="stat-label">Bu Ay Net</span><span class="stat-value" id="sum-net">₺0</span></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h2>Bugünün İşleri</h2></div>
+          <ul class="task-list compact" id="today-tasks"></ul>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><h2>Son Hareketler</h2></div>
+          <ul class="tx-list" id="recent-tx"></ul>
+        </div>
+      </section>
+
+      <!-- GELİR / GİDER -->
+      <section data-view="islemler" class="view hidden">
+        <div class="panel">
+          <div class="panel-head"><h2>Yeni Hareket</h2></div>
+          <form id="tx-form" class="form-row">
+            <div class="seg">
+              <label class="seg-opt"><input type="radio" name="tx-type" value="expense" checked /><span>Gider</span></label>
+              <label class="seg-opt"><input type="radio" name="tx-type" value="income" /><span>Gelir</span></label>
+            </div>
+            <input id="tx-amount" type="number" step="0.01" min="0" placeholder="Tutar (₺)" required />
+            <input id="tx-desc" type="text" placeholder="Açıklama" />
+            <select id="tx-category"></select>
+            <input id="tx-date" type="date" required />
+            <button class="btn btn-primary" type="submit">Ekle</button>
+          </form>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Hareketler</h2>
+            <input id="tx-month" type="month" class="month-picker" />
+          </div>
+          <ul class="tx-list" id="tx-list"></ul>
+        </div>
+      </section>
+
+      <!-- TAKVİM -->
+      <section data-view="takvim" class="view hidden">
+        <div class="panel">
+          <div class="panel-head cal-head">
+            <button class="icon-btn" id="cal-prev">‹</button>
+            <h2 id="cal-title">—</h2>
+            <button class="icon-btn" id="cal-next">›</button>
+          </div>
+          <div class="cal-weekdays">
+            <span>Pzt</span><span>Sal</span><span>Çar</span><span>Per</span><span>Cum</span><span>Cmt</span><span>Paz</span>
+          </div>
+          <div class="cal-grid" id="cal-grid"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2 id="day-title">Gün Detayı</h2></div>
+          <form id="event-form" class="form-row">
+            <input id="event-title" type="text" placeholder="Not / etkinlik ekle..." />
+            <button class="btn btn-primary" type="submit">Ekle</button>
+          </form>
+          <ul class="day-detail" id="day-detail"></ul>
+        </div>
+      </section>
+
+      <!-- İŞLER -->
+      <section data-view="isler" class="view hidden">
+        <div class="panel">
+          <div class="panel-head"><h2>Yeni İş</h2></div>
+          <form id="task-form" class="form-row">
+            <input id="task-title" type="text" placeholder="Yapılacak iş..." required />
+            <input id="task-due" type="date" />
+            <button class="btn btn-primary" type="submit">Ekle</button>
+          </form>
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <h2>İş Listesi</h2>
+            <label class="muted small"><input type="checkbox" id="show-done" /> Bitenleri göster</label>
+          </div>
+          <ul class="task-list" id="task-list"></ul>
+        </div>
+      </section>
+
+      <!-- AYARLAR -->
+      <section data-view="ayarlar" class="view hidden">
+        <div class="panel">
+          <div class="panel-head"><h2>Hesap & Senkron</h2></div>
+          <div class="settings-row"><span>Mod</span><span id="sync-mode" class="badge">—</span></div>
+          <div class="settings-row"><span>Kullanıcı</span><span id="user-email" class="muted">—</span></div>
+          <button id="logout-btn" class="btn btn-ghost hidden">Çıkış Yap</button>
+          <p class="muted small" id="local-note"></p>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2>Yedekle</h2></div>
+          <button id="export-btn" class="btn btn-ghost">Tüm Veriyi İndir (JSON)</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Alt navigasyon (mobil) / yan menü (masaüstü) -->
+    <nav class="nav">
+      <button class="nav-btn active" data-go="ozet"><span class="ni">🏠</span><span class="nl">Özet</span></button>
+      <button class="nav-btn" data-go="islemler"><span class="ni">💸</span><span class="nl">Gelir/Gider</span></button>
+      <button class="nav-btn" data-go="takvim"><span class="ni">📅</span><span class="nl">Takvim</span></button>
+      <button class="nav-btn" data-go="isler"><span class="ni">✅</span><span class="nl">İşler</span></button>
+      <button class="nav-btn" data-go="ayarlar"><span class="ni">⚙️</span><span class="nl">Ayarlar</span></button>
+    </nav>
+  </div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+# Statik site — derleme yok, depo kökü yayınlanır.
+[build]
+  publish = "."
+
+# Service worker ve config her zaman taze gelsin (eski sürüm takılmasın)
+[[headers]]
+  for = "/service-worker.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/js/config.js"
+  [headers.values]
+    Cache-Control = "no-cache"

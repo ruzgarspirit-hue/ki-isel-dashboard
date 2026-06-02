@@ -14,8 +14,21 @@ const fmtDate = (s) => {
 };
 
 const CATEGORIES = {
-  expense: ["Market", "Faturalar", "Kira", "Ulaşım", "Yemek", "Sağlık", "Eğlence", "Alışveriş", "Diğer"],
-  income: ["Maaş", "Ek Gelir", "Yatırım", "Hediye", "Diğer"],
+  income: ["Ofis maaş", "Hakem ücreti", "Kar payı", "Ek gelir"],
+  expense: [
+    "YKB kredi kartı",
+    "Garanti kredi kartı",
+    "Selim ev kira",
+    "Tuba ev kira",
+    "Tuba ev aidat",
+    "Samsara kredi kartı",
+    "Samsara ajanslar",
+    "Selim maaş",
+    "Selim ev aidat",
+    "Kredi ödemesi",
+    "Kooperatif ödemesi",
+    "Diğer",
+  ],
 };
 
 // ---------- Durum ----------

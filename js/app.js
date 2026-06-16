@@ -247,16 +247,29 @@ function wireTasks() {
     $("#task-due").value = "";
     await refreshAll();
   });
-  $("#show-done").addEventListener("change", renderTasks);
+  $("#archive-toggle").addEventListener("click", () => {
+    const list = $("#done-list");
+    const open = !list.hidden;
+    list.hidden = open;
+    $("#archive-caret").textContent = open ? "▸" : "▾";
+  });
 }
 
 function renderTasks() {
-  const showDone = $("#show-done").checked;
-  const rows = taskCache
-    .filter((t) => showDone || !t.done)
+  // Aktif liste: yalnızca yapılacaklar (bitenler buraya gelmez)
+  const active = taskCache
+    .filter((t) => !t.done)
     .sort((a, b) => (a.due_date || "9999").localeCompare(b.due_date || "9999"));
-  $("#task-list").innerHTML = rows.map(taskItemHTML).join("") || emptyHTML("İş yok. 🎉");
+  $("#task-list").innerHTML = active.map(taskItemHTML).join("") || emptyHTML("Aktif iş yok. 🎉");
   bindTaskEvents("#task-list");
+
+  // Arşiv: tamamlananlar (kayıt korunur). ✓ ile geri al, × ile kalıcı sil.
+  const done = taskCache
+    .filter((t) => t.done)
+    .sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
+  $("#done-count").textContent = done.length;
+  $("#done-list").innerHTML = done.map(taskItemHTML).join("") || emptyHTML("Tamamlanan iş yok.");
+  bindTaskEvents("#done-list");
 }
 
 function taskItemHTML(t) {

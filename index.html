@@ -116,9 +116,15 @@
         <div class="panel">
           <div class="panel-head">
             <h2>İş Listesi</h2>
-            <label class="muted small"><input type="checkbox" id="show-done" /> Bitenleri göster</label>
           </div>
           <ul class="task-list" id="task-list"></ul>
+        </div>
+        <div class="panel">
+          <div class="panel-head archive-head" id="archive-toggle">
+            <h2>Tamamlananlar <span id="done-count" class="badge">0</span></h2>
+            <span id="archive-caret" class="caret">▸</span>
+          </div>
+          <ul class="task-list" id="done-list" hidden></ul>
         </div>
       </section>
 

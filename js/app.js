@@ -6,6 +6,7 @@ const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 const tl = new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY" });
 const fmtMoney = (n) => tl.format(Number(n) || 0);
 const todayStr = () => new Date().toLocaleDateString("sv-SE"); // YYYY-MM-DD (yerel)
+const nowTime = () => new Date().toTimeString().slice(0, 5);    // "HH:MM" (yerel)
 const monthKey = (d) => d.slice(0, 7); // "YYYY-MM"
 const fmtDate = (s) => {
   if (!s) return "";
@@ -465,8 +466,20 @@ function wireHealth() {
     const weight = profileCache?.weight;
     if (!weight) { alert("Önce Ayarlar'dan kilonuzu girin."); return; }
     const kcal = Math.round(act.met * weight * (min / 60));
-    await store.exercises.add({ activity: act.name, minutes: min, kcal, date: todayStr() });
+    await store.exercises.add({ activity: act.name, minutes: min, kcal, date: todayStr(), time: $("#ex-time").value || nowTime() });
     $("#ex-minutes").value = "";
+    await refreshAll();
+  });
+
+  // Elle yemek ekle (fotoğrafsız)
+  $("#meal-manual-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const name = $("#mm-name").value.trim();
+    const kcal = parseInt($("#mm-kcal").value, 10);
+    if (!name || !(kcal >= 0)) return;
+    await store.meals.add({ name, kcal, items: [], date: todayStr(), time: $("#mm-time").value || nowTime() });
+    $("#mm-name").value = "";
+    $("#mm-kcal").value = "";
     await refreshAll();
   });
 
@@ -477,7 +490,7 @@ function wireHealth() {
   $("#meal-save").addEventListener("click", async () => {
     const name = $("#meal-name").value.trim() || "Öğün";
     const kcal = parseInt($("#meal-kcal").value, 10) || 0;
-    await store.meals.add({ name, kcal, items: pendingMeal?.items || [], date: todayStr() });
+    await store.meals.add({ name, kcal, items: pendingMeal?.items || [], date: todayStr(), time: $("#meal-time").value || nowTime() });
     resetMealForm();
     await refreshAll();
   });
@@ -506,6 +519,7 @@ async function onMealPhoto(e) {
         <div class="tx-amount">${Math.round(it.kcal) || 0} kcal</div></li>`
     ).join("") || emptyHTML("Yemek tanınamadı.");
     $("#meal-kcal").value = Math.round(data.total_kcal) || 0;
+    $("#meal-time").value = nowTime();
     $("#meal-name").value = "";
     $("#meal-conf").textContent = `Güven: ${data.confidence || "?"}${data.note ? " · " + data.note : ""} · Rakamı düzeltebilirsiniz.`;
     $("#meal-result").classList.remove("hidden");
@@ -553,6 +567,8 @@ function renderHealth() {
   if (sel && !sel.options.length) {
     sel.innerHTML = ACTIVITIES.map((a) => `<option value="${a.name}">${a.name}</option>`).join("");
   }
+  // Saat alanları varsayılanı (boşsa şu anki saat)
+  ["#mm-time", "#ex-time"].forEach((s) => { const el = $(s); if (el && !el.value) el.value = nowTime(); });
   // Kilo
   if (profileCache?.weight) $("#profile-weight").value = profileCache.weight;
   $("#ex-weight-note").textContent = profileCache?.weight
@@ -560,8 +576,9 @@ function renderHealth() {
     : "⚠️ Kalori hesabı için önce Ayarlar'dan kilonuzu girin.";
 
   const today = todayStr();
-  const meals = mealCache.filter((m) => m.date === today);
-  const exs = exCache.filter((x) => x.date === today);
+  const byTime = (a, b) => (a.time || "").localeCompare(b.time || "");
+  const meals = mealCache.filter((m) => m.date === today).sort(byTime);
+  const exs = exCache.filter((x) => x.date === today).sort(byTime);
   const kIn = meals.reduce((s, m) => s + (+m.kcal || 0), 0);
   const kOut = exs.reduce((s, x) => s + (+x.kcal || 0), 0);
   $("#kcal-in").textContent = `${kIn} kcal`;
@@ -572,7 +589,7 @@ function renderHealth() {
     `<li class="tx-item" data-id="${m.id}">
       <div class="tx-icon" style="background:rgba(34,197,94,.15)">🍽️</div>
       <div class="tx-main"><div class="tx-desc">${esc(m.name)}</div>
-        <div class="tx-sub">${(m.items || []).length} öğe</div></div>
+        <div class="tx-sub">${m.time ? "🕒 " + esc(m.time) + " · " : ""}${(m.items || []).length} öğe</div></div>
       <div class="tx-amount">${+m.kcal || 0} kcal</div>
       <button class="del-btn" data-del title="Sil">×</button>
     </li>`
@@ -583,7 +600,7 @@ function renderHealth() {
     `<li class="tx-item" data-id="${x.id}">
       <div class="tx-icon" style="background:rgba(56,189,248,.15)">🏃</div>
       <div class="tx-main"><div class="tx-desc">${esc(x.activity)}</div>
-        <div class="tx-sub">${x.minutes} dk</div></div>
+        <div class="tx-sub">${x.time ? "🕒 " + esc(x.time) + " · " : ""}${x.minutes} dk</div></div>
       <div class="tx-amount expense">−${+x.kcal || 0} kcal</div>
       <button class="del-btn" data-del title="Sil">×</button>
     </li>`

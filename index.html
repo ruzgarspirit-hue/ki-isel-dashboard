@@ -155,11 +155,21 @@
               <div class="form-row" style="margin-top:8px">
                 <input id="meal-name" type="text" placeholder="Öğün adı (örn. Öğle)" />
                 <input id="meal-kcal" type="number" min="0" placeholder="Toplam kcal" />
+                <input id="meal-time" type="time" />
                 <button class="btn btn-primary" id="meal-save">Kaydet</button>
                 <button class="btn btn-ghost" id="meal-cancel">İptal</button>
               </div>
               <p class="muted small" id="meal-conf"></p>
             </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h2>Elle Yemek Ekle</h2></div>
+            <form id="meal-manual-form" class="form-row">
+              <input id="mm-name" type="text" placeholder="Yemek / öğün adı" required />
+              <input id="mm-kcal" type="number" min="0" placeholder="kcal" required />
+              <input id="mm-time" type="time" />
+              <button class="btn btn-primary" type="submit">Ekle</button>
+            </form>
           </div>
           <div class="panel">
             <div class="panel-head"><h2>Bugünün Öğünleri</h2></div>
@@ -174,6 +184,7 @@
             <form id="ex-form" class="form-row">
               <select id="ex-activity"></select>
               <input id="ex-minutes" type="number" min="1" placeholder="Dakika" required />
+              <input id="ex-time" type="time" />
               <button class="btn btn-primary" type="submit">Ekle</button>
             </form>
             <p class="muted small" id="ex-weight-note"></p>

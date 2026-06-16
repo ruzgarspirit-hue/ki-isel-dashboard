@@ -18,17 +18,34 @@ exports.handler = async (event) => {
   try { body = JSON.parse(event.body || "{}"); }
   catch { return resp(400, { error: "Geçersiz istek." }); }
 
-  const { image, media_type, note } = body;
-  if (!image) return resp(400, { error: "Görsel gönderilmedi." });
+  const { image, media_type, note, text } = body;
+  if (!image && !text) return resp(400, { error: "Görsel veya metin gönderilmedi." });
 
-  const prompt = [
-    "Sen deneyimli bir beslenme uzmanısın. Fotoğraftaki yemeği analiz et.",
-    "Görseldeki her belirgin yiyeceği tahmini porsiyonuyla listele ve kalorisini (kcal) tahmin et.",
-    "Türk mutfağını ve standart porsiyonları dikkate al. Emin değilsen makul bir tahmin yap.",
-    note ? ("Kullanıcı notu: " + note) : "",
-    "SADECE şu JSON ile yanıt ver, başka hiçbir metin ekleme:",
-    '{"items":[{"name":"yiyecek","portion":"tahmini porsiyon","kcal":sayı}],"total_kcal":sayı,"confidence":"düşük|orta|yüksek","note":"kısa not"}',
-  ].filter(Boolean).join("\n");
+  const jsonSpec = '{"items":[{"name":"yiyecek","portion":"tahmini porsiyon","kcal":sayı}],"total_kcal":sayı,"confidence":"düşük|orta|yüksek","note":"kısa not"}';
+  const prompt = image
+    ? [
+        "Sen deneyimli bir beslenme uzmanısın. Fotoğraftaki yemeği analiz et.",
+        "Görseldeki her belirgin yiyeceği tahmini porsiyonuyla listele ve kalorisini (kcal) tahmin et.",
+        "Türk mutfağını ve standart porsiyonları dikkate al. Emin değilsen makul bir tahmin yap.",
+        note ? ("Kullanıcı notu: " + note) : "",
+        "SADECE şu JSON ile yanıt ver, başka hiçbir metin ekleme:",
+        jsonSpec,
+      ].filter(Boolean).join("\n")
+    : [
+        "Sen deneyimli bir beslenme uzmanısın. Kullanıcının yazdığı yemeği analiz et:",
+        '"""' + text + '"""',
+        "Metindeki her yiyeceği ve miktarını (örn. '2 yumurta', '1 orta boy kase pilav') ayrı ayrı ele al, kalorisini (kcal) tahmin et.",
+        "Türk mutfağını ve standart porsiyonları dikkate al. Miktar belirtilmemişse 1 normal porsiyon varsay.",
+        "SADECE şu JSON ile yanıt ver, başka hiçbir metin ekleme:",
+        jsonSpec,
+      ].join("\n");
+
+  const content = image
+    ? [
+        { type: "image", source: { type: "base64", media_type: media_type || "image/jpeg", data: image } },
+        { type: "text", text: prompt },
+      ]
+    : [{ type: "text", text: prompt }];
 
   try {
     const r = await fetch("https://api.anthropic.com/v1/messages", {
@@ -41,13 +58,7 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         model,
         max_tokens: 1024,
-        messages: [{
-          role: "user",
-          content: [
-            { type: "image", source: { type: "base64", media_type: media_type || "image/jpeg", data: image } },
-            { type: "text", text: prompt },
-          ],
-        }],
+        messages: [{ role: "user", content }],
       }),
     });
 

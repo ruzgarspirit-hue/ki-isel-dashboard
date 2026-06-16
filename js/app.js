@@ -471,6 +471,32 @@ function wireHealth() {
     await refreshAll();
   });
 
+  // Elle girişte AI ile kalori hesapla (metinden)
+  $("#mm-calc").addEventListener("click", async () => {
+    const text = $("#mm-name").value.trim();
+    const status = $("#mm-status");
+    if (!text) { status.textContent = "Önce ne yediğinizi yazın."; return; }
+    const btn = $("#mm-calc");
+    btn.disabled = true;
+    status.textContent = "Hesaplanıyor… ⏳";
+    try {
+      const res = await fetch("/.netlify/functions/analyze-meal", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Hesaplanamadı.");
+      $("#mm-kcal").value = Math.round(data.total_kcal) || 0;
+      const parts = (data.items || []).map((it) => `${it.name}: ${Math.round(it.kcal) || 0}`).join(" · ");
+      status.textContent = `≈ ${Math.round(data.total_kcal) || 0} kcal${parts ? " (" + parts + ")" : ""} — rakamı düzeltebilirsiniz`;
+    } catch (err) {
+      status.textContent = err.message + (location.hostname === "localhost" ? " (kalori hesabı yalnızca canlı sitede çalışır)" : "");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
   // Elle yemek ekle (fotoğrafsız)
   $("#meal-manual-form").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -480,6 +506,7 @@ function wireHealth() {
     await store.meals.add({ name, kcal, items: [], date: todayStr(), time: $("#mm-time").value || nowTime() });
     $("#mm-name").value = "";
     $("#mm-kcal").value = "";
+    $("#mm-status").textContent = "";
     await refreshAll();
   });
 

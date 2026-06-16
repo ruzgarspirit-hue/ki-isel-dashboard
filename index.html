@@ -165,11 +165,13 @@
           <div class="panel">
             <div class="panel-head"><h2>Elle Yemek Ekle</h2></div>
             <form id="meal-manual-form" class="form-row">
-              <input id="mm-name" type="text" placeholder="Yemek / öğün adı" required />
+              <input id="mm-name" type="text" placeholder="örn. 2 yumurta, 1 kase pilav" required />
               <input id="mm-kcal" type="number" min="0" placeholder="kcal" required />
               <input id="mm-time" type="time" />
+              <button type="button" id="mm-calc" class="btn btn-ghost">🧮 Hesapla</button>
               <button class="btn btn-primary" type="submit">Ekle</button>
             </form>
+            <p class="muted small" id="mm-status" style="margin-top:8px"></p>
           </div>
           <div class="panel">
             <div class="panel-head"><h2>Bugünün Öğünleri</h2></div>

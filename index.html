@@ -128,6 +128,63 @@
         </div>
       </section>
 
+      <!-- SAĞLIK -->
+      <section data-view="saglik" class="view hidden">
+        <div class="cards">
+          <div class="stat-card income"><span class="stat-label">Bugün Alınan</span><span class="stat-value" id="kcal-in">0</span></div>
+          <div class="stat-card expense"><span class="stat-label">Bugün Yakılan</span><span class="stat-value" id="kcal-out">0</span></div>
+          <div class="stat-card net"><span class="stat-label">Net</span><span class="stat-value" id="kcal-net">0</span></div>
+        </div>
+
+        <div class="subtabs">
+          <button class="subtab active" data-sub="yemek">🍽️ Yemek</button>
+          <button class="subtab" data-sub="egzersiz">🏃 Egzersiz</button>
+        </div>
+
+        <!-- YEMEK -->
+        <div data-sub-view="yemek">
+          <div class="panel">
+            <div class="panel-head"><h2>Fotoğrafla Yemek Ekle</h2></div>
+            <input type="file" accept="image/*" capture="environment" id="meal-photo" hidden />
+            <button class="btn btn-primary" id="meal-capture">📷 Fotoğraf Çek / Seç</button>
+            <div id="meal-analyzing" class="muted small hidden" style="margin-top:10px">Analiz ediliyor… ⏳</div>
+            <div id="meal-error" class="auth-error"></div>
+            <div id="meal-result" class="hidden" style="margin-top:12px">
+              <img id="meal-preview" class="meal-preview" alt="" />
+              <ul class="tx-list" id="meal-items"></ul>
+              <div class="form-row" style="margin-top:8px">
+                <input id="meal-name" type="text" placeholder="Öğün adı (örn. Öğle)" />
+                <input id="meal-kcal" type="number" min="0" placeholder="Toplam kcal" />
+                <button class="btn btn-primary" id="meal-save">Kaydet</button>
+                <button class="btn btn-ghost" id="meal-cancel">İptal</button>
+              </div>
+              <p class="muted small" id="meal-conf"></p>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h2>Bugünün Öğünleri</h2></div>
+            <ul class="tx-list" id="meal-list"></ul>
+          </div>
+        </div>
+
+        <!-- EGZERSİZ -->
+        <div data-sub-view="egzersiz" hidden>
+          <div class="panel">
+            <div class="panel-head"><h2>Egzersiz Ekle</h2></div>
+            <form id="ex-form" class="form-row">
+              <select id="ex-activity"></select>
+              <input id="ex-minutes" type="number" min="1" placeholder="Dakika" required />
+              <button class="btn btn-primary" type="submit">Ekle</button>
+            </form>
+            <p class="muted small" id="ex-weight-note"></p>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h2>Bugünün Egzersizleri</h2></div>
+            <ul class="tx-list" id="ex-list"></ul>
+          </div>
+        </div>
+      </section>
+
       <!-- AYARLAR -->
       <section data-view="ayarlar" class="view hidden">
         <div class="panel">
@@ -136,6 +193,14 @@
           <div class="settings-row"><span>Kullanıcı</span><span id="user-email" class="muted">—</span></div>
           <button id="logout-btn" class="btn btn-ghost hidden">Çıkış Yap</button>
           <p class="muted small" id="local-note"></p>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2>Profil (kalori hesabı için)</h2></div>
+          <div class="form-row">
+            <input id="profile-weight" type="number" min="20" max="300" placeholder="Kilonuz (kg)" />
+            <button id="weight-save" class="btn btn-primary">Kaydet</button>
+          </div>
+          <p class="muted small">Egzersizde yakılan kalori kilonuza göre hesaplanır.</p>
         </div>
         <div class="panel">
           <div class="panel-head"><h2>Yedekle</h2></div>
@@ -150,6 +215,7 @@
       <button class="nav-btn" data-go="islemler"><span class="ni">💸</span><span class="nl">Gelir/Gider</span></button>
       <button class="nav-btn" data-go="takvim"><span class="ni">📅</span><span class="nl">Takvim</span></button>
       <button class="nav-btn" data-go="isler"><span class="ni">✅</span><span class="nl">İşler</span></button>
+      <button class="nav-btn" data-go="saglik"><span class="ni">🍎</span><span class="nl">Sağlık</span></button>
       <button class="nav-btn" data-go="ayarlar"><span class="ni">⚙️</span><span class="nl">Ayarlar</span></button>
     </nav>
   </div>

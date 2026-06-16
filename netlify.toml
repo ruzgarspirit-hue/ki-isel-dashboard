@@ -2,6 +2,11 @@
 [build]
   publish = "."
 
+# Sunucu fonksiyonları (yemek fotoğrafı analizi için)
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
 # Service worker ve config her zaman taze gelsin (eski sürüm takılmasın)
 [[headers]]
   for = "/service-worker.js"

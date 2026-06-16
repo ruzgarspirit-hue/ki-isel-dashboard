@@ -38,8 +38,34 @@ const CATEGORIES = {
 let txCache = [];
 let taskCache = [];
 let eventCache = [];
+let mealCache = [];
+let exCache = [];
+let profileCache = null;
+let pendingMeal = null;            // analiz edilip kaydı bekleyen öğün
 let calDate = new Date();          // takvimde görüntülenen ay
 let selectedDay = todayStr();      // takvimde seçili gün
+
+// Egzersiz MET değerleri (kcal = MET × kilo × saat)
+const ACTIVITIES = [
+  { name: "Yürüyüş (tempolu)", met: 5.0 },
+  { name: "Yürüyüş (normal)", met: 3.5 },
+  { name: "Koşu", met: 9.8 },
+  { name: "Bisiklet", met: 7.5 },
+  { name: "Yüzme", met: 7.0 },
+  { name: "Ağırlık antrenmanı", met: 5.0 },
+  { name: "HIIT", met: 8.0 },
+  { name: "Yoga", met: 2.5 },
+  { name: "Pilates", met: 3.0 },
+  { name: "Futbol", met: 7.0 },
+  { name: "Basketbol", met: 8.0 },
+  { name: "Tenis", met: 7.3 },
+  { name: "İp atlama", met: 12.0 },
+  { name: "Eliptik / kondisyon", met: 5.0 },
+  { name: "Yürüyüş bandı", met: 4.3 },
+  { name: "Merdiven çıkma", met: 8.0 },
+  { name: "Dans", met: 5.0 },
+  { name: "Ev işi", met: 3.0 },
+];
 
 // ============================================================
 //  Başlangıç
@@ -105,22 +131,29 @@ async function showApp() {
   wireTasks();
   wireCalendar();
   wireSettings();
+  wireHealth();
   initFormDefaults();
   await refreshAll();
   navTo("ozet");
 }
 
 async function refreshAll() {
-  [txCache, taskCache, eventCache] = await Promise.all([
-    store.transactions.list(),
-    store.tasks.list(),
-    store.events.list(),
+  // allSettled: bir tablo (örn. yeni eklenenler) henüz yoksa uygulama çökmesin.
+  const safe = (p, fb) => p.then((v) => v ?? fb).catch(() => fb);
+  [txCache, taskCache, eventCache, mealCache, exCache, profileCache] = await Promise.all([
+    safe(store.transactions.list(), []),
+    safe(store.tasks.list(), []),
+    safe(store.events.list(), []),
+    safe(store.meals.list(), []),
+    safe(store.exercises.list(), []),
+    safe(store.profile.get(), null),
   ]);
   renderSummary();
   renderTxList();
   renderTasks();
   renderCalendar();
   renderDayDetail();
+  renderHealth();
   renderSettings();
 }
 
@@ -401,6 +434,161 @@ function renderSettings() {
   $("#local-note").textContent = cloud
     ? "Verileriniz bulutta saklanıyor ve tüm cihazlarınızda senkron."
     : "Senkron için js/config.js içine Supabase bilgilerinizi girin (KURULUM.md).";
+}
+
+// ============================================================
+//  Sağlık (Yemek + Egzersiz + günlük kalori)
+// ============================================================
+function wireHealth() {
+  // Alt sekmeler
+  $$(".subtab").forEach((b) =>
+    b.addEventListener("click", () => {
+      $$(".subtab").forEach((x) => x.classList.toggle("active", x === b));
+      $$("[data-sub-view]").forEach((v) => (v.hidden = v.dataset.subView !== b.dataset.sub));
+    })
+  );
+
+  // Kilo kaydet (Ayarlar)
+  $("#weight-save").addEventListener("click", async () => {
+    const w = parseFloat($("#profile-weight").value);
+    if (!(w > 0)) return;
+    await store.profile.setWeight(w);
+    await refreshAll();
+  });
+
+  // Egzersiz ekle
+  $("#ex-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const act = ACTIVITIES.find((a) => a.name === $("#ex-activity").value);
+    const min = parseInt($("#ex-minutes").value, 10);
+    if (!act || !(min > 0)) return;
+    const weight = profileCache?.weight;
+    if (!weight) { alert("Önce Ayarlar'dan kilonuzu girin."); return; }
+    const kcal = Math.round(act.met * weight * (min / 60));
+    await store.exercises.add({ activity: act.name, minutes: min, kcal, date: todayStr() });
+    $("#ex-minutes").value = "";
+    await refreshAll();
+  });
+
+  // Yemek fotoğrafı
+  $("#meal-capture").addEventListener("click", () => $("#meal-photo").click());
+  $("#meal-photo").addEventListener("change", onMealPhoto);
+  $("#meal-cancel").addEventListener("click", resetMealForm);
+  $("#meal-save").addEventListener("click", async () => {
+    const name = $("#meal-name").value.trim() || "Öğün";
+    const kcal = parseInt($("#meal-kcal").value, 10) || 0;
+    await store.meals.add({ name, kcal, items: pendingMeal?.items || [], date: todayStr() });
+    resetMealForm();
+    await refreshAll();
+  });
+}
+
+async function onMealPhoto(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  $("#meal-error").textContent = "";
+  $("#meal-result").classList.add("hidden");
+  $("#meal-analyzing").classList.remove("hidden");
+  try {
+    const { dataUrl, base64 } = await downscaleImage(file, 1024, 0.8);
+    const res = await fetch("/.netlify/functions/analyze-meal", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ image: base64, media_type: "image/jpeg" }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Analiz başarısız.");
+    pendingMeal = data;
+    $("#meal-preview").src = dataUrl;
+    $("#meal-items").innerHTML = (data.items || []).map((it) =>
+      `<li class="tx-item"><div class="tx-main"><div class="tx-desc">${esc(it.name)}</div>
+        <div class="tx-sub">${esc(it.portion || "")}</div></div>
+        <div class="tx-amount">${Math.round(it.kcal) || 0} kcal</div></li>`
+    ).join("") || emptyHTML("Yemek tanınamadı.");
+    $("#meal-kcal").value = Math.round(data.total_kcal) || 0;
+    $("#meal-name").value = "";
+    $("#meal-conf").textContent = `Güven: ${data.confidence || "?"}${data.note ? " · " + data.note : ""} · Rakamı düzeltebilirsiniz.`;
+    $("#meal-result").classList.remove("hidden");
+  } catch (err) {
+    $("#meal-error").textContent = err.message + (location.hostname === "localhost" ? " (Fotoğraf analizi yalnızca canlı sitede çalışır.)" : "");
+  } finally {
+    $("#meal-analyzing").classList.add("hidden");
+    e.target.value = ""; // aynı dosya tekrar seçilebilsin
+  }
+}
+
+function resetMealForm() {
+  pendingMeal = null;
+  $("#meal-result").classList.add("hidden");
+  $("#meal-error").textContent = "";
+  $("#meal-items").innerHTML = "";
+  $("#meal-kcal").value = "";
+  $("#meal-name").value = "";
+}
+
+// Görseli küçült (Netlify yük sınırı + hız). data URL ve base64 (önek olmadan) döndürür.
+function downscaleImage(file, maxSize, quality) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width > height && width > maxSize) { height = Math.round(height * maxSize / width); width = maxSize; }
+      else if (height > maxSize) { width = Math.round(width * maxSize / height); height = maxSize; }
+      const canvas = document.createElement("canvas");
+      canvas.width = width; canvas.height = height;
+      canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL("image/jpeg", quality);
+      resolve({ dataUrl, base64: dataUrl.split(",")[1] });
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Görsel okunamadı.")); };
+    img.src = url;
+  });
+}
+
+function renderHealth() {
+  // Egzersiz aktivite listesi
+  const sel = $("#ex-activity");
+  if (sel && !sel.options.length) {
+    sel.innerHTML = ACTIVITIES.map((a) => `<option value="${a.name}">${a.name}</option>`).join("");
+  }
+  // Kilo
+  if (profileCache?.weight) $("#profile-weight").value = profileCache.weight;
+  $("#ex-weight-note").textContent = profileCache?.weight
+    ? `Kilonuz: ${profileCache.weight} kg (Ayarlar'dan değiştirebilirsiniz).`
+    : "⚠️ Kalori hesabı için önce Ayarlar'dan kilonuzu girin.";
+
+  const today = todayStr();
+  const meals = mealCache.filter((m) => m.date === today);
+  const exs = exCache.filter((x) => x.date === today);
+  const kIn = meals.reduce((s, m) => s + (+m.kcal || 0), 0);
+  const kOut = exs.reduce((s, x) => s + (+x.kcal || 0), 0);
+  $("#kcal-in").textContent = `${kIn} kcal`;
+  $("#kcal-out").textContent = `${kOut} kcal`;
+  $("#kcal-net").textContent = `${kIn - kOut} kcal`;
+
+  $("#meal-list").innerHTML = meals.map((m) =>
+    `<li class="tx-item" data-id="${m.id}">
+      <div class="tx-icon" style="background:rgba(34,197,94,.15)">🍽️</div>
+      <div class="tx-main"><div class="tx-desc">${esc(m.name)}</div>
+        <div class="tx-sub">${(m.items || []).length} öğe</div></div>
+      <div class="tx-amount">${+m.kcal || 0} kcal</div>
+      <button class="del-btn" data-del title="Sil">×</button>
+    </li>`
+  ).join("") || emptyHTML("Bugün öğün eklenmedi.");
+  bindDeletes("#meal-list", store.meals);
+
+  $("#ex-list").innerHTML = exs.map((x) =>
+    `<li class="tx-item" data-id="${x.id}">
+      <div class="tx-icon" style="background:rgba(56,189,248,.15)">🏃</div>
+      <div class="tx-main"><div class="tx-desc">${esc(x.activity)}</div>
+        <div class="tx-sub">${x.minutes} dk</div></div>
+      <div class="tx-amount expense">−${+x.kcal || 0} kcal</div>
+      <button class="del-btn" data-del title="Sil">×</button>
+    </li>`
+  ).join("") || emptyHTML("Bugün egzersiz eklenmedi.");
+  bindDeletes("#ex-list", store.exercises);
 }
 
 // ============================================================

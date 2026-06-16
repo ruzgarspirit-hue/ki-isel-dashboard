@@ -101,6 +101,32 @@ function makeTable(table) {
 const transactions = makeTable("transactions");
 const tasks = makeTable("tasks");
 const events = makeTable("events");
+const meals = makeTable("meals");
+const exercises = makeTable("exercises");
+
+// Profil (tek satır: kilo). Bulutta upsert, yerelde localStorage.
+const profile = {
+  async get() {
+    if (cloud) {
+      const { data, error } = await sb.from("profiles").select("*").eq("user_id", currentUser.id).maybeSingle();
+      if (error) throw error;
+      return data;
+    }
+    try { return JSON.parse(localStorage.getItem("kd_profile")) || null; } catch { return null; }
+  },
+  async setWeight(weight) {
+    if (cloud) {
+      const { data, error } = await sb.from("profiles")
+        .upsert({ user_id: currentUser.id, weight }, { onConflict: "user_id" })
+        .select().single();
+      if (error) throw error;
+      return data;
+    }
+    const p = { weight };
+    localStorage.setItem("kd_profile", JSON.stringify(p));
+    return p;
+  },
+};
 
 // Tüm veriyi dışa aktar (yedek)
 async function exportAll() {
@@ -108,8 +134,11 @@ async function exportAll() {
     transactions: await transactions.list(),
     tasks: await tasks.list(),
     events: await events.list(),
+    meals: await meals.list(),
+    exercises: await exercises.list(),
+    profile: await profile.get(),
     exportedAt: new Date().toISOString(),
   };
 }
 
-export default { init, isCloud, getUser, needsLogin, auth, transactions, tasks, events, exportAll };
+export default { init, isCloud, getUser, needsLogin, auth, transactions, tasks, events, meals, exercises, profile, exportAll };

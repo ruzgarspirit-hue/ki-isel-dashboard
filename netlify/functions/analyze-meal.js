@@ -5,7 +5,7 @@
 // İsteğe bağlı: ANTHROPIC_MODEL (varsayılan aşağıda; model hatası alırsanız
 //   Anthropic konsolundaki güncel bir model adını buraya yazın)
 
-const DEFAULT_MODEL = "claude-3-5-sonnet-latest";
+const DEFAULT_MODEL = "claude-haiku-4-5";
 
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") return resp(405, { error: "Yalnızca POST." });

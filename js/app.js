@@ -241,10 +241,11 @@ function renderSummary() {
   $("#recent-tx").innerHTML = txCache.slice(0, 5).map(txItemHTML).join("") || emptyHTML("Henüz hareket yok.");
   bindDeletes("#recent-tx", store.transactions);
 
-  // Bugünün işleri
-  const today = todayStr();
-  const due = taskCache.filter((t) => !t.done && t.due_date === today);
-  $("#today-tasks").innerHTML = due.map(taskItemHTML).join("") || emptyHTML("Bugün için iş yok.");
+  // Bekleyen (bitmemiş) işler — vade tarihine göre, tarihi geçenler/yakın olanlar üstte
+  const active = taskCache
+    .filter((t) => !t.done)
+    .sort((a, b) => (a.due_date || "9999").localeCompare(b.due_date || "9999"));
+  $("#today-tasks").innerHTML = active.map(taskItemHTML).join("") || emptyHTML("Bekleyen iş yok. 🎉");
   bindTaskEvents("#today-tasks");
 }
 

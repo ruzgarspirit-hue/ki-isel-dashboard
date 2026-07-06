@@ -45,6 +45,7 @@ let profileCache = null;
 let pendingMeal = null;            // analiz edilip kaydı bekleyen öğün
 let calDate = new Date();          // takvimde görüntülenen ay
 let selectedDay = todayStr();      // takvimde seçili gün
+let selectedMonth = monthKey(todayStr()); // gelir/gider için seçili ay (varsayılan: bu ay)
 
 // Egzersiz MET değerleri (kcal = MET × kilo × saat)
 const ACTIVITIES = [
@@ -222,23 +223,29 @@ function wireTransactions() {
     $("#tx-desc").value = "";
     await refreshAll();
   });
-  $("#tx-month").addEventListener("change", renderTxList);
+  const onMonthChange = (e) => {
+    selectedMonth = e.target.value || monthKey(todayStr());
+    refreshAll();
+  };
+  $("#tx-month").addEventListener("change", onMonthChange);
+  $("#ozet-month").addEventListener("change", onMonthChange);
 }
 
 function renderSummary() {
-  const mk = monthKey(todayStr());
+  const mk = selectedMonth;
   const month = txCache.filter((t) => monthKey(t.date) === mk);
   const inc = month.filter((t) => t.type === "income").reduce((s, t) => s + +t.amount, 0);
   const exp = month.filter((t) => t.type === "expense").reduce((s, t) => s + +t.amount, 0);
   $("#sum-income").textContent = fmtMoney(inc);
   $("#sum-expense").textContent = fmtMoney(exp);
   $("#sum-net").textContent = fmtMoney(inc - exp);
+  $("#ozet-month").value = mk;
 
-  const totalNet = txCache.reduce((s, t) => s + (t.type === "income" ? +t.amount : -+t.amount), 0);
-  $("#balance-pill").textContent = fmtMoney(totalNet);
+  // Üstteki bakiye = SEÇİLİ AYIN neti (kümülatif değil, her ay sıfırdan)
+  $("#balance-pill").textContent = fmtMoney(inc - exp);
 
-  // Son hareketler
-  $("#recent-tx").innerHTML = txCache.slice(0, 5).map(txItemHTML).join("") || emptyHTML("Henüz hareket yok.");
+  // Son hareketler — seçili ay
+  $("#recent-tx").innerHTML = month.slice(0, 5).map(txItemHTML).join("") || emptyHTML("Bu ay hareket yok.");
   bindDeletes("#recent-tx", store.transactions);
 
   // Bekleyen (bitmemiş) işler — vade tarihine göre, tarihi geçenler/yakın olanlar üstte
@@ -250,7 +257,8 @@ function renderSummary() {
 }
 
 function renderTxList() {
-  const mk = $("#tx-month").value || monthKey(todayStr());
+  const mk = selectedMonth;
+  $("#tx-month").value = mk;
   const rows = txCache.filter((t) => monthKey(t.date) === mk);
   $("#tx-list").innerHTML = rows.map(txItemHTML).join("") || emptyHTML("Bu ay hareket yok.");
   bindDeletes("#tx-list", store.transactions);

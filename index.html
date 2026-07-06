@@ -47,10 +47,16 @@
           <ul class="tx-list" id="recent-tx"></ul>
         </div>
 
-        <div class="cards">
-          <div class="stat-card income"><span class="stat-label">Bu Ay Gelir</span><span class="stat-value" id="sum-income">₺0</span></div>
-          <div class="stat-card expense"><span class="stat-label">Bu Ay Gider</span><span class="stat-value" id="sum-expense">₺0</span></div>
-          <div class="stat-card net"><span class="stat-label">Bu Ay Net</span><span class="stat-value" id="sum-net">₺0</span></div>
+        <div class="panel">
+          <div class="panel-head">
+            <h2>Aylık Özet</h2>
+            <input id="ozet-month" type="month" class="month-picker" />
+          </div>
+          <div class="cards">
+            <div class="stat-card income"><span class="stat-label">Gelir</span><span class="stat-value" id="sum-income">₺0</span></div>
+            <div class="stat-card expense"><span class="stat-label">Gider</span><span class="stat-value" id="sum-expense">₺0</span></div>
+            <div class="stat-card net"><span class="stat-label">Net</span><span class="stat-value" id="sum-net">₺0</span></div>
+          </div>
         </div>
       </section>
 

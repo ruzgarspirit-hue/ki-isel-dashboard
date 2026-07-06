@@ -82,6 +82,7 @@ body {
 
 /* ---------- Kartlar / paneller ---------- */
 .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+.panel .cards { margin-bottom: 0; }
 .stat-card {
   background: var(--panel); border: 1px solid var(--border);
   border-radius: var(--radius); padding: 14px;
